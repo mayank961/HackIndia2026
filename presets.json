@@ -1,0 +1,14 @@
+{
+  "blog_seo": {
+    "mode": "seo",
+    "template_prompt_tail": "Include 5 SEO keywords, meta description, and suggested title."
+  },
+  "bug_report": {
+    "mode": "technical",
+    "template_prompt_tail": "Include steps to reproduce, expected vs actual behaviour, sample input/output."
+  },
+  "creative_story": {
+    "mode": "creative",
+    "template_prompt_tail": "Set scene, tone, story beats, and twist."
+  }
+}

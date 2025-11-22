@@ -1,0 +1,451 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>Prompt Enhancer - Demo with Persistent History</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        html {
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #0f1523;
+            color: #fff;
+            height: 100vh;
+            display: flex;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: rgba(255, 255, 255, 0.06);
+            padding: 20px;
+            border-right: 1px solid rgba(255, 255, 255, 0.1);
+            overflow-y: auto;
+            backdrop-filter: blur(12px);
+        }
+
+        .sidebar-header {
+            margin-top: 0;
+            font-size: 22px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .history-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .history-item {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            position: relative;
+            transition: 0.2s;
+        }
+
+        .history-item:hover {
+            background: rgba(255, 255, 255, 0.14);
+            transform: translateX(3px);
+        }
+
+        .history-item .delete {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            cursor: pointer;
+            color: #ff6b6b;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        /* Main Area */
+        .main-pannel {
+            background: #374151;
+            padding: 40px;
+            justify-content: center;
+            border-radius: 10px;
+            max-width: 800px;
+            margin: auto;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
+            flex: 1;
+        }
+
+        textarea,
+        select,
+        input {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: #fff;
+            margin-bottom: 15px;
+        }
+
+        button {
+            background: #5c8fff;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-weight: 500;
+            color: #fff;
+            cursor: pointer;
+            font-size: 16px;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            background: #2f6add;
+        }
+
+        .enhance{
+            display: flex;
+            gap: 10px;
+            /* gap-2 */
+            margin-top: 0.5rem;
+            /* mt-2 */
+        }
+        .enhance button{
+            background: #5c8fff;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-weight: 500;
+            color: #fff;
+            cursor: pointer;
+            font-size: 16px;
+            transition: 0.2s;
+            flex: 1;
+        }
+
+        /* Button Base Styles */
+        .flex button {
+            padding: 10px 16px;
+            /* px-3 py-1 equivalent */
+            border-radius: 8px;
+            /* rounded */
+            margin: 10px;
+            color: white;
+            font-weight: 100;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            border: none;
+            font-size: 14px;
+        }
+
+        /* Copy Button */
+        #copyBtn {
+            background-color: #444;
+            /* green-500 */
+        }
+
+        #copyBtn:hover {
+            background-color: #494949;
+            /* green-600 */
+        }
+
+        /* Export Button */
+        #exportBtn {
+            background-color: #555;
+            /* blue-500 */
+        }
+
+        #exportBtn:hover {
+            background-color: #555555;
+            /* blue-600 */
+        }
+
+        /* Use Button */
+        #useBtn {
+            background-color: #8b5cf6;
+            /* purple-500 */
+        }
+
+        #useBtn:hover {
+            background-color: #7c3aed;
+            /* purple-600 */
+        }
+
+        /* Optional: spacing between buttons */
+        .flex {
+            display: flex;
+            gap: 10px;
+            /* gap-2 */
+            margin-top: 0.5rem;
+            /* mt-2 */
+        }
+
+
+        .result-box {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 18px;
+            border-radius: 8px;
+            margin-top: 25px;
+            white-space: pre-wrap;
+            color: #eee;
+            backdrop-filter: blur(8px);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Sidebar History -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>History</h2>
+            <button id="clearHistory" class="text-red-500 text-sm">Clear All</button>
+        </div>
+        <div class="history-list" id="historyList">
+            <!-- Dynamic History Items -->
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-pannel">
+        <div class="max-w-3xl mx-auto bg-white dark:bg-slate-800 p-6 rounded-lg shadow">
+
+            <div class="flex justify-between items-center mb-5">
+                <h1 class="text-2xl font-semibold dark:text-white">Prompt Enhancer</h1>
+                <button id="modeToggle" class="px-3 py-1 border rounded dark:text-white">🌙</button>
+            </div>
+            <label class="block mb-2 dark:text-gray-200">Your Prompt</label>
+            <textarea id="prompt" class="w-full p-2 border rounded h-28 dark:bg-slate-700 dark:text-white"></textarea>
+
+            <div class="flex gap-2 mt-3">
+                <select id="mode" class="p-2 border rounded dark:bg-slate-700 dark:text-white mb-4 w-full">
+                    <option value="general">General</option>
+                    <option value="seo">SEO</option>
+                    <option value="technical">Technical</option>
+                    <option value="creative">Creative</option>
+                    <option value="marketing">Marketing</option>
+                </select>
+
+                <label class="font-medium">Select Tone:</label>
+                <select id="tone" class="p-2 border rounded dark:bg-slate-700 dark:text-white mb-4 w-full">
+                    <option value="neutral">Neutral</option>
+                    <option value="formal">Formal</option>
+                    <option value="casual">Casual</option>
+                    <option value="persuasive">Persuasive</option>
+                    <option value="funny">Funny</option>
+                    <option value="technical">Technical</option>
+                </select>
+
+                <label class="font-medium">Select Language:</label>
+                <select id="language" class="p-2 border rounded dark:bg-slate-700 dark:text-white mb-4 w-full">
+                    <option value="english">English</option>
+                    <option value="hindi">Hindi</option>
+                    <option value="spanish">Spanish</option>
+                    <!-- Add more languages as needed -->
+                </select>
+            </div>
+            <div class="enhance">
+                <button id="go">Enhance</button>
+            </div>
+            <!-- Action Buttons -->
+            <div class="flex">
+                <button id="copyBtn">Copy</button>
+                <button id="exportBtn">Export .txt</button>
+                <button id="useBtn">Use Enhanced Prompt</button>
+            </div>
+
+            
+
+
+            <!-- Result Box -->
+            <div id="result" class="mt-6 p-4 bg-slate-50 dark:bg-slate-700 rounded hidden">
+                <h2 class="text-lg font-medium dark:text-white">Enhanced Prompt</h2>
+                <pre id="enhanced" class="whitespace-pre-wrap dark:text-gray-200"></pre>
+
+
+
+                <h3 class="mt-3 font-medium dark:text-white">Score</h3>
+                <pre id="score" class="whitespace-pre-wrap dark:text-gray-200"></pre>
+
+                <h3 class="mt-3 font-medium dark:text-white">Suggestions</h3>
+                <pre id="suggestions" class="whitespace-pre-wrap dark:text-gray-200"></pre>
+
+                <h3 class="mt-3 font-medium dark:text-white">Raw LLM Output</h3>
+                <pre id="raw" class="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300"></pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let history = JSON.parse(localStorage.getItem("promptHistory") || "[]");
+        let lastPrompt = "";
+
+        // Dark Mode Toggle
+        const modeToggle = document.getElementById("modeToggle");
+
+        modeToggle.onclick = () => {
+            document.documentElement.classList.toggle("dark");
+
+            if (document.documentElement.classList.contains("dark")) {
+                modeToggle.innerText = "☀️";
+                localStorage.setItem("theme", "dark");
+            } else {
+                modeToggle.innerText = "🌙";
+                localStorage.setItem("theme", "light");
+            }
+        };
+
+        // Apply saved theme on load
+        if (localStorage.getItem("theme") === "dark") {
+            document.documentElement.classList.add("dark");
+            modeToggle.innerText = "☀️";
+        } else {
+            document.documentElement.classList.remove("dark");
+            modeToggle.innerText = "🌙";
+        }
+
+
+
+        // Render History
+        function renderHistory() {
+            const list = document.getElementById("historyList");
+            list.innerHTML = "";
+            history.forEach((item, index) => {
+                const li = document.createElement("li");
+                li.className = "p-2 border rounded flex justify-between items-center cursor-pointer hover:bg-gray-200 dark:hover:bg-slate-600";
+
+                const span = document.createElement("span");
+                span.textContent = item.prompt.length > 40 ? item.prompt.slice(0, 40) + "..." : item.prompt;
+                span.onclick = () => {
+                    document.getElementById("prompt").value = item.prompt;
+                    fillResults(item); // show result box without calling API
+                };
+
+                const delBtn = document.createElement("button");
+                delBtn.textContent = "✖";
+                delBtn.className = "text-red-500 text-sm ml-2";
+                delBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    history.splice(index, 1);
+                    saveHistory();
+                    renderHistory();
+                };
+
+                li.appendChild(span);
+                li.appendChild(delBtn);
+                list.appendChild(li);
+            });
+        }
+
+        function saveHistory() {
+            localStorage.setItem("promptHistory", JSON.stringify(history));
+        }
+
+        function fillResults(data) {
+            document.getElementById("result").classList.remove("hidden");
+            document.getElementById("enhanced").textContent = data.enhanced ?? data.enhanced_prompt ?? "No enhanced text";
+            document.getElementById("score").textContent = JSON.stringify(data.score, null, 2);
+            document.getElementById("suggestions").textContent = JSON.stringify(data.suggestions ?? [], null, 2);
+            document.getElementById("raw").textContent = JSON.stringify(data.raw ?? data.raw_llm_output ?? {}, null, 2);
+        }
+
+        // Enhance button
+        document.getElementById("go").onclick = async () => {
+            const prompt = document.getElementById("prompt").value;
+            const mode = document.getElementById("mode").value;
+            const tone = document.getElementById("tone").value;
+            const language = document.getElementById("language").value;
+
+
+            if (!prompt.trim()) { alert("Enter a prompt"); return; }
+
+            const btn = document.getElementById("go");
+            btn.disabled = true;
+            btn.innerText = "Enhancing...";
+
+            try {
+                const res = await fetch("http://127.0.0.1:8000/enhance", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ prompt, mode, tone, length: null,language })
+                });
+
+                if (!res.ok) {
+                    alert("Server error: " + await res.text());
+                    return;
+                }
+
+                const data = await res.json();
+                fillResults(data);
+
+                // Add to history
+                history.unshift({
+                    prompt: prompt,
+                    enhanced: data.enhanced_prompt,
+                    score: data.score,
+                    suggestions: data.suggestions,
+                    raw: data.raw_llm_output
+                });
+
+                saveHistory();
+                renderHistory();
+
+            } catch (err) {
+                alert("Error: " + err.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Enhance";
+            }
+        };
+
+        // Copy to clipboard
+        document.getElementById("copyBtn").onclick = () => {
+            const text = document.getElementById("enhanced").textContent;
+            navigator.clipboard.writeText(text)
+                .then(() => alert("Enhanced prompt copied!"))
+                .catch(err => alert("Copy failed: " + err));
+        };
+
+        // Export as .txt
+        document.getElementById("exportBtn").onclick = () => {
+            const text = document.getElementById("enhanced").textContent;
+            const blob = new Blob([text], { type: "text/plain" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "enhanced_prompt.txt";
+            link.click();
+            URL.revokeObjectURL(link.href);
+        };
+
+        // Use Enhanced Prompt (example: copy to clipboard for another tool)
+        document.getElementById("useBtn").onclick = () => {
+            const text = document.getElementById("enhanced").textContent;
+            navigator.clipboard.writeText(text)
+                .then(() => alert("Enhanced prompt ready to use!"))
+                .catch(err => alert("Action failed: " + err));
+        };
+
+        // Clear history
+        document.getElementById("clearHistory").onclick = () => {
+            if (confirm("Clear all history?")) {
+                history = [];
+                saveHistory();
+                renderHistory();
+            }
+        };
+
+        // Initial render
+        renderHistory();
+
+    </script>
+
+</body>
+
+</html>
